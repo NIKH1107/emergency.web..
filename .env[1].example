@@ -1,0 +1,13 @@
+# Copy to .env and edit:  cp .env.example .env
+PORT=3000
+
+# postgres://USER:PASSWORD@HOST:PORT/DATABASE
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/emergency_portal
+
+# Use a long random string, e.g.:  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+JWT_SECRET=change-me-to-a-long-random-string
+JWT_EXPIRES_IN=8h
+
+# Only needed if the frontend is served from a different origin (comma-separated).
+# Leave empty when the backend serves frontend/index.html itself.
+CORS_ORIGIN=

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emergency Response Portal</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+:root{--bg:#f4f5f7;--fg:#111827;--muted:#4b5563;--card:#fff;--line:#c7ccd4;--red:#b91c1c;--red-d:#7f1d1d;--blue:#1d4ed8;--green:#166534;--amber:#92400e}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+header{background:#111827;color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.25rem;padding:.6rem 1rem}
+.brand{font-weight:700;font-size:1.15rem;color:#fff;text-decoration:none}
+nav{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .9rem}
+nav a{color:#e5e7eb;text-decoration:none;padding:.35rem .2rem;border-bottom:2px solid transparent}
+nav a[aria-current="page"],nav a:hover{color:#fff;border-bottom-color:#fff}
+.who{color:#9ca3af;font-size:.9rem}
+main{max-width:1100px;margin:0 auto;padding:1rem}
+main:focus{outline:none}
+h1{font-size:1.6rem;margin:.5rem 0 1rem}h2{font-size:1.2rem;margin:1.5rem 0 .5rem}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+.btn,button{font:inherit;min-height:44px;padding:.55rem 1.1rem;border-radius:8px;border:2px solid #111827;background:#fff;color:#111827;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:.4rem}
+.btn:hover,button:hover{background:#e5e7eb}
+.btn.primary{background:var(--red);border-color:var(--red-d);color:#fff;font-weight:700}.btn.primary:hover{background:var(--red-d)}
+.btn.sm,button.sm{min-height:36px;padding:.25rem .7rem;font-size:.9rem}
+.btn.call{border-color:var(--green);color:var(--green);font-weight:700}
+button:disabled{opacity:.5;cursor:not-allowed}
+.sos{display:flex;align-items:center;justify-content:center;width:100%;max-width:520px;min-height:130px;margin:1rem auto;background:var(--red);color:#fff;font-size:1.9rem;font-weight:800;border-radius:16px;border:4px solid var(--red-d);text-decoration:none;box-shadow:0 6px 0 var(--red-d)}
+.sos:hover{background:var(--red-d)}
+.hero{text-align:center}.muted{color:var(--muted)}
+.card,.contacts li,.inc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem}
+.contacts{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem}
+.contacts li{display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+label{display:block;font-weight:600;margin:.8rem 0 .25rem}
+input,select,textarea{width:100%;font:inherit;padding:.6rem;border:2px solid #6b7280;border-radius:8px;background:#fff;color:var(--fg)}
+textarea{min-height:110px}
+form.card{max-width:640px}
+.row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end}.row>*{flex:1 1 150px}.row .btn,.row button{flex:0 0 auto}
+.sr{position:absolute;left:-9999px}
+#live{max-width:1100px;margin:0 auto;padding:0 1rem}
+#live div{padding:.7rem 1rem;border-radius:8px;margin-top:.6rem;font-weight:600}
+#live .ok{background:#dcfce7;color:#14532d;border:1px solid #166534}
+#live .error,.error{background:#fee2e2;color:#7f1d1d;border:1px solid #b91c1c;padding:.7rem 1rem;border-radius:8px}
+.alert{padding:.7rem 1rem;border-bottom:3px solid}
+.alert-info{background:#dbeafe;border-color:#1d4ed8;color:#1e3a8a}.alert-warning{background:#fef3c7;border-color:#b45309;color:#78350f}.alert-danger{background:#fee2e2;border-color:#b91c1c;color:#7f1d1d}
+.badge{display:inline-block;padding:.1rem .55rem;border-radius:999px;font-size:.82rem;font-weight:700;border:1px solid #111827;background:#fff;white-space:nowrap}
+.sev-low{background:#dcfce7}.sev-medium{background:#fef9c3}.sev-high{background:#fed7aa}.sev-critical{background:#b91c1c;color:#fff}
+.st-resolved{background:#dcfce7}.st-cancelled{background:#e5e7eb}.st-reported{background:#fee2e2}.st-dispatched,.st-in_progress{background:#dbeafe}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:1rem}
+.cards .card b{display:block;font-size:1.8rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}.sos{font-size:1.5rem}}
+#map{height:320px;border-radius:10px;border:1px solid var(--line);background:#e5e7eb}
+.bar{display:grid;grid-template-columns:90px 1fr 32px;align-items:center;gap:.5rem;margin:.25rem 0;font-size:.9rem}
+.bar .track{background:#e5e7eb;border-radius:4px;height:14px;overflow:hidden}.bar .fill{background:var(--blue);height:100%}
+.tablewrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{padding:.55rem .7rem;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:.93rem}
+th{background:#f3f4f6}
+td select{min-width:130px;padding:.3rem}
+.inc{margin-bottom:.75rem}.inc .actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem}
+ol.timeline{list-style:none;padding:0;margin:1rem 0;border-left:4px solid var(--blue)}
+ol.timeline li{padding:.3rem 0 .9rem 1rem;position:relative}
+ol.timeline li::before{content:"";position:absolute;left:-10px;top:.55rem;width:16px;height:16px;border-radius:50%;background:var(--blue);border:3px solid #fff}
+dialog{border:2px solid #111827;border-radius:12px;max-width:520px;width:92%;padding:1rem}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.pick{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+footer{max-width:1100px;margin:1.5rem auto 2rem;padding:1rem;border-top:2px solid var(--line);color:var(--muted);font-size:.92rem}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="#/">&#128680; Emergency Portal</a>
+  <nav id="nav" aria-label="Main navigation"></nav>
+</header>
+<div id="alerts" aria-live="polite"></div>
+<div id="live" role="status" aria-live="polite"></div>
+<main id="main" tabindex="-1"></main>
+<dialog id="dlg" aria-labelledby="dlgTitle"></dialog>
+<footer><strong>Disclaimer:</strong> This portal does not replace official emergency services. In a life-threatening emergency, call <a href="tel:112">112</a> immediately.</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+'use strict';
+/* ====================== config & helpers ====================== */
+const EMERGENCY_NUMBER = '112';              // change for your country
+const MAP_CENTER = [26.8467, 80.9462];       // default map centre (Lucknow)
+const TYPES = ['medical','fire','police','flood','accident','other'];
+const SEVS = ['low','medium','high','critical'];
+const STATUSES = ['reported','acknowledged','dispatched','in_progress','resolved','cancelled'];
+const SEV_COLOR = {low:'#22c55e',medium:'#eab308',high:'#f97316',critical:'#dc2626'};
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const label = s => String(s).replace(/_/g, ' ');
+const opts = (arr, sel) => arr.map(v => `<option value="${v}"${v === sel ? ' selected' : ''}>${esc(label(v))}</option>`).join('');
+const badge = (kind, v) => `<span class="badge ${kind}-${esc(v)}">${esc(label(v))}</span>`;
+const fmt = d => new Date(d).toLocaleString();
+const ago = d => { const s = Math.max(0, (Date.now() - new Date(d)) / 1000);
+  if (s < 60) return Math.floor(s) + 's ago'; if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago'; return new Date(d).toLocaleDateString(); };
+const telHref = p => 'tel:' + String(p).replace(/[^0-9+]/g, '');
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: k => { try { localStorage.removeItem(k); } catch {} }
+};
+
+const main = $('#main'), nav = $('#nav'), dlg = $('#dlg');
+let token = store.get('token'), user = null, timer = null, map = null, markers = null, fitted = false;
+try { user = JSON.parse(store.get('user') || 'null'); } catch {}
+
+let flashTimer;
+function flash(text, type = 'ok') {
+  const box = $('#live'); box.innerHTML = `<div class="${type}">${esc(text)}</div>`;
+  clearTimeout(flashTimer); flashTimer = setTimeout(() => (box.innerHTML = ''), 6000);
+}
+
+async function api(path, { method = 'GET', body } = {}) {
+  const res = await fetch('/api' + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  let data = null; try { data = await res.json(); } catch {}
+  if (res.status === 401 && token && !path.startsWith('/auth/')) { logout(true); throw new Error('Session expired, please log in again'); }
+  if (!res.ok) throw new Error((data && data.error) || 'Request failed (' + res.status + ')');
+  return data;
+}
+
+function setSession(d) { token = d.token; user = d.user; store.set('token', token); store.set('user', JSON.stringify(user)); }
+function logout(expired) {
+  token = null; user = null; store.del('token'); store.del('user'); renderNav();
+  location.hash = '#/login'; if (expired) flash('Session expired, please log in again', 'error');
+}
+const homeFor = u => ['dispatcher','admin'].includes(u.role) ? '#/dispatch' : u.role === 'responder' ? '#/responder' : '#/';
+
+/* ====================== layout: nav + alerts ====================== */
+function renderNav() {
+  const cur = location.hash || '#/';
+  const links = [['#/', 'Home'], ['#/report', 'Report'], ['#/track', 'Track']];
+  if (user) {
+    if (['dispatcher','admin'].includes(user.role)) links.push(['#/dispatch', 'Dispatch']);
+    if (user.role === 'responder') links.push(['#/responder', 'My assignments']);
+    if (user.role === 'admin') links.push(['#/admin', 'Admin']);
+    links.push(['#/my', 'My reports']);
+  }
+  nav.innerHTML = links.map(([h, t]) => `<a href="${h}"${cur.split('/')[1] === h.split('/')[1] ? ' aria-current="page"' : ''}>${t}</a>`).join('') +
+    (user ? `<span class="who">${esc(user.name)} (${esc(user.role)})</span><button class="sm" data-act="logout">Log out</button>`
+          : `<a href="#/login">Log in</a><a href="#/register">Register</a>`);
+}
+async function loadAlerts() {
+  try {
+    const list = await api('/alerts');
+    $('#alerts').innerHTML = list.map(a => `<div class="alert alert-${esc(a.level)}" role="alert"><strong>${esc(a.title)}:</strong> ${esc(a.message)}</div>`).join('');
+  } catch { /* banner is optional */ }
+}
+
+/* ====================== pages ====================== */
+const pages = {};
+const forms = {};     // submit handlers by form id
+const acts = {};      // click handlers by data-act
+const chg = {};       // change handlers by data-chg
+
+pages[''] = async () => {
+  const contacts = await api('/contacts');
+  main.innerHTML = `
+    <section class="hero">
+      <a class="sos" href="#/report" aria-label="Report an emergency">&#128680; REPORT EMERGENCY</a>
+      <p class="muted">In immediate danger? Call <a href="${telHref(EMERGENCY_NUMBER)}"><strong>${EMERGENCY_NUMBER}</strong></a> first.</p>
+    </section>
+    <h2>Emergency numbers</h2>
+    <ul class="contacts">${contacts.map(c => `
+      <li><span><strong>${esc(c.name)}</strong><br><small class="muted">${esc(c.service_type)}${c.city ? ' &middot; ' + esc(c.city) : ''}</small></span>
+      <a class="btn call" href="${telHref(c.phone)}" aria-label="Call ${esc(c.name)} on ${esc(c.phone)}">&#128222; ${esc(c.phone)}</a></li>`).join('')}
+    </ul>`;
+};
+
+pages.report = async () => {
+  main.innerHTML = `
+    <h1>Report an emergency</h1>
+    <form id="reportForm" class="card" novalidate>
+      <label for="type">What kind of emergency?</label>
+      <select id="type" name="type" required>${opts(TYPES)}</select>
+      <label for="severity">How serious is it?</label>
+      <select id="severity" name="severity">${opts(SEVS, 'medium')}</select>
+      <label for="description">Describe what is happening</label>
+      <textarea id="description" name="description" required minlength="5" maxlength="2000" placeholder="Who needs help? What happened? Any dangers nearby?"></textarea>
+      <label>Location</label>
+      <button type="button" data-act="useLocation">&#128205; Use my current location</button>
+      <p id="locStatus" class="muted" aria-live="polite">Location not captured yet.</p>
+      <input type="hidden" id="lat"><input type="hidden" id="lng">
+      <label for="address">Address or landmark (use this if location is unavailable)</label>
+      <input id="address" name="address" maxlength="255" placeholder="e.g. near Hazratganj crossing, Lucknow">
+      <label for="phone">Your phone number (optional, so responders can call you)</label>
+      <input id="phone" name="phone" type="tel" maxlength="20" autocomplete="tel">
+      <p><button class="btn primary" id="sendBtn" type="submit">Send emergency report</button></p>
+    </form>`;
+};
+acts.useLocation = el => {
+  if (!navigator.geolocation) throw new Error('Location is not supported on this device. Please type the address.');
+  el.disabled = true; $('#locStatus').textContent = 'Getting your location…';
+  navigator.geolocation.getCurrentPosition(p => {
+    $('#lat').value = p.coords.latitude.toFixed(6); $('#lng').value = p.coords.longitude.toFixed(6);
+    $('#locStatus').textContent = `Location captured (accuracy about ${Math.round(p.coords.accuracy)} m).`; el.disabled = false;
+  }, err => {
+    $('#locStatus').textContent = 'Could not get location. Please type the address below.'; el.disabled = false;
+    flash('Location error: ' + err.message, 'error');
+  }, { enableHighAccuracy: true, timeout: 15000 });
+};
+forms.reportForm = async f => {
+  const description = $('#description').value.trim(), address = $('#address').value.trim();
+  const latitude = $('#lat').value, longitude = $('#lng').value;
+  if (description.length < 5) throw new Error('Please describe the emergency (at least 5 characters)');
+  if (!(latitude && longitude) && !address) throw new Error('Share your location or type an address');
+  $('#sendBtn').disabled = true;
+  try {
+    const r = await api('/incidents', { method: 'POST', body: {
+      type: $('#type').value, severity: $('#severity').value, description, address,
+      phone: $('#phone').value.trim(), latitude, longitude } });
+    store.set('lastCode', r.tracking_code);
+    main.innerHTML = `<h1>Report received</h1><div class="card">
+      <p>Your tracking code is:</p><p style="font-size:2rem;font-weight:800;letter-spacing:.1em">${esc(r.tracking_code)}</p>
+      <p>Save this code. Use it to follow the status of your report.</p>
+      <p><a class="btn" href="#/track/${encodeURIComponent(r.tracking_code)}">Track this report</a></p>
+      <p class="muted">If anyone is in immediate danger, also call <a href="${telHref(EMERGENCY_NUMBER)}">${EMERGENCY_NUMBER}</a>.</p></div>`;
+  } finally { const b = $('#sendBtn'); if (b) b.disabled = false; }
+};
+
+pages.track = async code => {
+  main.innerHTML = `<h1>Track an incident</h1>
+    <form id="trackForm" class="row card" style="max-width:640px">
+      <div><label for="code">Tracking code</label><input id="code" maxlength="12" required value="${esc(code || store.get('lastCode') || '')}" placeholder="e.g. DEMO000001"></div>
+      <button class="btn primary" type="submit">Track</button></form>
+    <div id="result"></div>`;
+  if (code) { await showTrack(code); timer = setInterval(() => showTrack(code, true).catch(() => {}), 15000); }
+};
+async function showTrack(code, quiet) {
+  const box = $('#result'); if (!box) return;
+  try {
+    const d = await api('/incidents/track/' + encodeURIComponent(code));
+    if (!$('#result')) return;
+    box.innerHTML = `<h2>${esc(d.tracking_code)}</h2><div class="card">
+      <p>${badge('st', d.status)} ${badge('sev', d.severity)} <strong>${esc(label(d.type))}</strong> &middot; ${esc(d.address || 'location shared')}</p>
+      <p class="muted">Reported ${esc(fmt(d.created_at))} &middot; last update ${esc(ago(d.updated_at))}</p>
+      <ol class="timeline">${d.timeline.map(t => `<li><strong>${esc(label(t.status))}</strong><br><small class="muted">${esc(fmt(t.created_at))}</small></li>`).join('')}</ol></div>`;
+  } catch (e) { if (!quiet) box.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+forms.trackForm = async () => { const c = $('#code').value.trim(); if (!c) return; clearInterval(timer); await showTrack(c); timer = setInterval(() => showTrack(c, true).catch(() => {}), 15000); };
+
+pages.login = async () => {
+  main.innerHTML = `<h1>Log in</h1><form id="loginForm" class="card">
+    <label for="email">Email</label><input id="email" type="email" required autocomplete="username">
+    <label for="password">Password</label><input id="password" type="password" required autocomplete="current-password">
+    <p><button class="btn primary" type="submit">Log in</button></p>
+    <p>No account? <a href="#/register">Register</a></p></form>`;
+};
+forms.loginForm = async () => {
+  const d = await api('/auth/login', { method: 'POST', body: { email: $('#email').value, password: $('#password').value } });
+  setSession(d); renderNav(); flash('Welcome, ' + d.user.name); location.hash = homeFor(d.user);
+};
+pages.register = async () => {
+  main.innerHTML = `<h1>Create an account</h1><form id="registerForm" class="card">
+    <label for="name">Full name</label><input id="name" required maxlength="100" autocomplete="name">
+    <label for="email">Email</label><input id="email" type="email" required autocomplete="email">
+    <label for="phone">Phone (optional)</label><input id="phone" type="tel" maxlength="20" autocomplete="tel">
+    <label for="password">Password</label><input id="password" type="password" required minlength="8" autocomplete="new-password" aria-describedby="pwHelp">
+    <small id="pwHelp" class="muted">At least 8 characters with an uppercase letter, a lowercase letter and a number.</small>
+    <p><button class="btn primary" type="submit">Register</button></p></form>`;
+};
+forms.registerForm = async () => {
+  const d = await api('/auth/register', { method: 'POST', body: { name: $('#name').value, email: $('#email').value, phone: $('#phone').value, password: $('#password').value } });
+  setSession(d); renderNav(); flash('Account created'); location.hash = '#/';
+};
+
+pages.my = async () => {
+  const list = await api('/incidents/mine');
+  main.innerHTML = `<h1>My reports</h1>` + (list.length ? `<div class="tablewrap"><table><thead><tr><th>Code</th><th>Type</th><th>Severity</th><th>Status</th><th>Reported</th></tr></thead><tbody>${
+    list.map(i => `<tr><td><a href="#/track/${encodeURIComponent(i.tracking_code)}">${esc(i.tracking_code)}</a></td><td>${esc(label(i.type))}</td><td>${badge('sev', i.severity)}</td><td>${badge('st', i.status)}</td><td>${esc(ago(i.created_at))}</td></tr>`).join('')
+  }</tbody></table></div>` : '<p class="muted">You have not reported any incidents while logged in.</p>');
+};
+
+/* ---------------- dispatcher dashboard ---------------- */
+pages.dispatch = async () => {
+  main.innerHTML = `<h1>Dispatcher dashboard</h1>
+    <div id="stats" class="cards"></div>
+    <div class="grid2"><div class="card" id="charts"></div><div id="map" role="region" aria-label="Map of incidents"></div></div>
+    <form id="filters" class="row card" style="max-width:none">
+      <div><label for="f_status">Status</label><select id="f_status" data-chg="refresh"><option value="">All</option>${opts(STATUSES)}</select></div>
+      <div><label for="f_type">Type</label><select id="f_type" data-chg="refresh"><option value="">All</option>${opts(TYPES)}</select></div>
+      <div><label for="f_severity">Severity</label><select id="f_severity" data-chg="refresh"><option value="">All</option>${opts(SEVS)}</select></div>
+    </form>
+    <h2>Incidents <small class="muted" id="updated"></small></h2>
+    <div class="tablewrap"><table><thead><tr><th>ID</th><th>Type</th><th>Severity</th><th>Status</th><th>Description</th><th>Location</th><th>Reported</th><th>Responders</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>`;
+  initMap();
+  await refreshDispatch();
+  timer = setInterval(() => refreshDispatch().catch(() => {}), 10000);   // live refresh
+};
+function initMap() {
+  const el = $('#map');
+  if (typeof L === 'undefined') { el.innerHTML = '<p class="muted" style="padding:1rem">Map could not load (check your internet connection).</p>'; return; }
+  map = L.map(el).setView(MAP_CENTER, 12);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+  markers = L.layerGroup().addTo(map); fitted = false;
+}
+async function refreshDispatch() {
+  if (!$('#rows')) return;
+  const q = new URLSearchParams();
+  for (const k of ['status', 'type', 'severity']) { const v = $('#f_' + k).value; if (v) q.set(k, v); }
+  const [list, st] = await Promise.all([api('/incidents?' + q), api('/admin/stats')]);
+  if (!$('#rows')) return;   // user navigated away
+
+  $('#stats').innerHTML = [['Total incidents', st.total], ['Open', st.open], ['Open critical', st.open_by_severity.critical],
+    ['Avg response (min)', st.avg_response_minutes ?? '—']].map(([t, n]) => `<div class="card"><b>${esc(n)}</b>${esc(t)}</div>`).join('');
+  const bars = (title, obj) => { const max = Math.max(1, ...Object.values(obj));
+    return `<strong>${title}</strong>` + Object.entries(obj).map(([k, n]) =>
+      `<div class="bar"><span>${esc(label(k))}</span><div class="track"><div class="fill" style="width:${Math.round(n / max * 100)}%"></div></div><b>${n}</b></div>`).join(''); };
+  $('#charts').innerHTML = bars('By status', st.by_status) + '<br>' + bars('By type', st.by_type);
+
+  $('#rows').innerHTML = list.length ? list.map(i => {
+    const closed = ['resolved', 'cancelled'].includes(i.status);
+    return `<tr><td>#${i.id}</td><td>${esc(label(i.type))}</td><td>${badge('sev', i.severity)}</td>
+      <td><select data-chg="setStatus" data-id="${i.id}" aria-label="Status of incident ${i.id}"${closed ? ' disabled' : ''}>${opts(STATUSES, i.status)}</select></td>
+      <td title="${esc(i.description)}">${esc(i.description.length > 70 ? i.description.slice(0, 70) + '…' : i.description)}${i.reporter_phone ? `<br><a href="${telHref(i.reporter_phone)}">${esc(i.reporter_phone)}</a>` : ''}</td>
+      <td>${esc(i.address || (i.latitude != null ? i.latitude + ', ' + i.longitude : ''))}</td>
+      <td>${esc(ago(i.created_at))}</td>
+      <td>${i.responders.map(r => esc(r.name) + ' <small class="muted">(' + esc(r.department) + ')</small>').join('<br>') || '<span class="muted">none</span>'}</td>
+      <td>${closed ? '' : `<button class="sm" data-act="assignOpen" data-id="${i.id}">Assign</button>`}</td></tr>`;
+  }).join('') : '<tr><td colspan="9" class="muted">No incidents match these filters.</td></tr>';
+  $('#updated').textContent = '(updated ' + new Date().toLocaleTimeString() + ')';
+
+  if (markers) {
+    markers.clearLayers(); const pts = [];
+    list.filter(i => i.latitude != null).forEach(i => {
+      const p = [Number(i.latitude), Number(i.longitude)]; pts.push(p);
+      L.circleMarker(p, { radius: 10, color: '#111', weight: 1.5, fillColor: SEV_COLOR[i.severity], fillOpacity: .9 })
+        .bindPopup(`<strong>#${i.id} ${esc(label(i.type))}</strong><br>${esc(label(i.status))}<br>${esc(i.address || '')}`).addTo(markers);
+    });
+    if (!fitted && pts.length) { map.fitBounds(pts, { padding: [30, 30], maxZoom: 15 }); fitted = true; }
+  }
+}
+chg.refresh = () => refreshDispatch();
+chg.setStatus = async el => {
+  try { await api(`/incidents/${el.dataset.id}/status`, { method: 'PATCH', body: { status: el.value } }); flash('Status updated'); }
+  finally { await refreshDispatch(); }
+};
+acts.assignOpen = async el => {
+  const id = el.dataset.id;
+  const list = await api('/responders?available=true');
+  dlg.innerHTML = `<h2 id="dlgTitle">Assign responder to #${esc(id)}</h2>` + (list.length ? list.map(r => `
+    <div class="pick"><span><strong>${esc(r.name)}</strong> <span class="badge">${esc(r.department)}</span><br><small class="muted">${esc(r.vehicle_info || '')}</small></span>
+    <button class="sm" data-act="assignDo" data-inc="${esc(id)}" data-resp="${r.id}">Assign</button></div>`).join('')
+    : '<p class="muted">No responders are available right now.</p>') +
+    '<p><button data-act="closeDlg">Cancel</button></p>';
+  dlg.showModal();
+};
+acts.assignDo = async el => {
+  await api(`/incidents/${el.dataset.inc}/assign`, { method: 'POST', body: { responder_id: Number(el.dataset.resp) } });
+  dlg.close(); flash('Responder assigned'); await refreshDispatch();
+};
+acts.closeDlg = () => dlg.close();
+
+/* ---------------- responder dashboard ---------------- */
+pages.responder = async () => {
+  const draw = async () => {
+    if (!$('#respRoot')) return;
+    const [me, list] = await Promise.all([api('/responders/me'), api('/responders/me/assignments')]);
+    if (!$('#respRoot')) return;
+    $('#respRoot').innerHTML = `
+      <div class="card"><strong>${esc(me.department)}</strong> ${esc(me.vehicle_info || '')} &mdash;
+      status: <strong>${me.is_available ? 'Available' : 'Busy / off duty'}</strong>
+      <button class="sm" data-act="setAvail" data-id="${me.id}" data-val="${!me.is_available}">Mark ${me.is_available ? 'unavailable' : 'available'}</button></div>
+      <h2>Assigned incidents</h2>` + (list.length ? list.map(i => {
+        const closed = ['resolved', 'cancelled'].includes(i.status);
+        const geo = i.latitude != null ? `<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${esc(i.latitude)}&amp;mlon=${esc(i.longitude)}#map=17/${esc(i.latitude)}/${esc(i.longitude)}">Open map</a>` : '';
+        return `<div class="inc"><p>${badge('sev', i.severity)} ${badge('st', i.status)} <strong>${esc(label(i.type))}</strong> <small class="muted">#${i.id} &middot; assigned ${esc(ago(i.assigned_at))}</small></p>
+          <p>${esc(i.description)}</p>
+          <p>&#128205; ${esc(i.address || '')} ${geo}${i.reporter_phone ? ` &middot; <a href="${telHref(i.reporter_phone)}">Call ${esc(i.reporter_phone)}</a>` : ''}</p>
+          ${closed ? '' : `<div class="actions"><button data-act="respStatus" data-id="${i.id}" data-status="in_progress">On scene / in progress</button>
+          <button class="btn primary" data-act="respStatus" data-id="${i.id}" data-status="resolved">Mark resolved</button></div>`}</div>`;
+      }).join('') : '<p class="muted">Nothing assigned to you right now.</p>');
+  };
+  main.innerHTML = '<h1>My assignments</h1><div id="respRoot"></div>';
+  window.__drawResp = draw;
+  await draw(); timer = setInterval(() => draw().catch(() => {}), 15000);
+};
+acts.setAvail = async el => {
+  await api(`/responders/${el.dataset.id}/availability`, { method: 'PATCH', body: { is_available: el.dataset.val === 'true' } });
+  await window.__drawResp();
+};
+acts.respStatus = async el => {
+  const note = prompt('Add a note (optional):');
+  if (note === null) return;   // cancelled
+  await api(`/incidents/${el.dataset.id}/status`, { method: 'PATCH', body: { status: el.dataset.status, note } });
+  flash('Status updated'); await window.__drawResp();
+};
+
+/* ---------------- admin ---------------- */
+pages.admin = async () => {
+  main.innerHTML = `<h1>Administration</h1>
+    <h2>Users</h2><div id="usersBox"></div>
+    <form id="userForm" class="card" style="max-width:none"><strong>Create user</strong>
+      <div class="row"><div><label for="u_name">Name</label><input id="u_name" required></div>
+      <div><label for="u_email">Email</label><input id="u_email" type="email" required></div>
+      <div><label for="u_phone">Phone</label><input id="u_phone" type="tel"></div>
+      <div><label for="u_pw">Password</label><input id="u_pw" type="password" required minlength="8"></div></div>
+      <div class="row"><div><label for="u_role">Role</label><select id="u_role">${opts(['citizen','responder','dispatcher','admin'], 'responder')}</select></div>
+      <div><label for="u_dept">Department (responders)</label><select id="u_dept">${opts(['police','fire','ambulance','disaster','other'])}</select></div>
+      <div><label for="u_veh">Vehicle (responders)</label><input id="u_veh" maxlength="100"></div>
+      <button class="btn primary" type="submit">Create</button></div></form>
+    <h2>Emergency contacts</h2><div id="contactsBox"></div>
+    <form id="contactForm" class="card row" style="max-width:none">
+      <div><label for="c_name">Name</label><input id="c_name" required></div>
+      <div><label for="c_type">Service type</label><input id="c_type" required placeholder="police, fire…"></div>
+      <div><label for="c_phone">Phone</label><input id="c_phone" required></div>
+      <div><label for="c_city">City (optional)</label><input id="c_city"></div>
+      <button class="btn primary" type="submit">Add contact</button></form>
+    <h2>Public alerts</h2><div id="alertsBox"></div>
+    <form id="alertForm" class="card" style="max-width:none"><strong>Post alert</strong>
+      <div class="row"><div><label for="a_title">Title</label><input id="a_title" required maxlength="150"></div>
+      <div><label for="a_level">Level</label><select id="a_level">${opts(['info','warning','danger'])}</select></div>
+      <div><label for="a_hours">Expires in (hours, optional)</label><input id="a_hours" type="number" min="1" max="720"></div></div>
+      <label for="a_msg">Message</label><textarea id="a_msg" required maxlength="1000"></textarea>
+      <p><button class="btn primary" type="submit">Publish alert</button></p></form>`;
+  await Promise.all([loadUsers(), loadContacts(), loadAdminAlerts()]);
+};
+async function loadUsers() {
+  const list = await api('/admin/users');
+  $('#usersBox').innerHTML = `<div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th></th></tr></thead><tbody>${
+    list.map(u => `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.role)}${u.department ? ' / ' + esc(u.department) : ''}</td><td>${u.is_active ? 'Yes' : 'No'}</td>
+    <td><button class="sm" data-act="userToggle" data-id="${u.id}" data-val="${!u.is_active}">${u.is_active ? 'Deactivate' : 'Activate'}</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+async function loadContacts() {
+  const list = await api('/contacts/all');
+  $('#contactsBox').innerHTML = `<div class="tablewrap"><table><thead><tr><th>Name</th><th>Type</th><th>Phone</th><th>City</th><th>Active</th><th></th></tr></thead><tbody>${
+    list.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.service_type)}</td><td>${esc(c.phone)}</td><td>${esc(c.city || 'All')}</td><td>${c.is_active ? 'Yes' : 'No'}</td>
+    <td><button class="sm" data-act="contactToggle" data-id="${c.id}" data-val="${!c.is_active}">${c.is_active ? 'Hide' : 'Show'}</button>
+    <button class="sm" data-act="contactDel" data-id="${c.id}">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+async function loadAdminAlerts() {
+  const list = await api('/alerts');
+  $('#alertsBox').innerHTML = list.length ? list.map(a => `<div class="alert alert-${esc(a.level)}"><strong>${esc(a.title)}</strong> &mdash; ${esc(a.message)}
+    <small>${a.expires_at ? '(expires ' + esc(fmt(a.expires_at)) + ')' : '(no expiry)'}</small> <button class="sm" data-act="alertDel" data-id="${a.id}">Delete</button></div>`).join('')
+    : '<p class="muted">No active alerts.</p>';
+}
+forms.userForm = async f => {
+  await api('/admin/users', { method: 'POST', body: { name: $('#u_name').value, email: $('#u_email').value, phone: $('#u_phone').value,
+    password: $('#u_pw').value, role: $('#u_role').value, department: $('#u_dept').value, vehicle_info: $('#u_veh').value } });
+  f.reset(); flash('User created'); await loadUsers();
+};
+forms.contactForm = async f => {
+  await api('/contacts', { method: 'POST', body: { name: $('#c_name').value, service_type: $('#c_type').value, phone: $('#c_phone').value, city: $('#c_city').value } });
+  f.reset(); flash('Contact added'); await loadContacts();
+};
+forms.alertForm = async f => {
+  await api('/alerts', { method: 'POST', body: { title: $('#a_title').value, message: $('#a_msg').value, level: $('#a_level').value, expires_in_hours: $('#a_hours').value } });
+  f.reset(); flash('Alert published'); await Promise.all([loadAdminAlerts(), loadAlerts()]);
+};
+acts.userToggle = async el => { await api('/admin/users/' + el.dataset.id, { method: 'PATCH', body: { is_active: el.dataset.val === 'true' } }); await loadUsers(); };
+acts.contactToggle = async el => { await api('/contacts/' + el.dataset.id, { method: 'PUT', body: { is_active: el.dataset.val === 'true' } }); await loadContacts(); };
+acts.contactDel = async el => { if (confirm('Delete this contact?')) { await api('/contacts/' + el.dataset.id, { method: 'DELETE' }); await loadContacts(); } };
+acts.alertDel = async el => { if (confirm('Delete this alert?')) { await api('/alerts/' + el.dataset.id, { method: 'DELETE' }); await Promise.all([loadAdminAlerts(), loadAlerts()]); } };
+acts.logout = () => logout(false);
+
+/* ====================== router & event delegation ====================== */
+const guard = { dispatch: ['dispatcher','admin'], responder: ['responder'], admin: ['admin'], my: ['citizen','responder','dispatcher','admin'] };
+
+async function route() {
+  clearInterval(timer); timer = null;
+  if (map) { map.remove(); map = null; markers = null; }
+  if (dlg.open) dlg.close();
+  const [, name = '', arg = ''] = location.hash.split('/');
+  renderNav();
+  if (!pages[name]) { main.innerHTML = '<h1>Page not found</h1><p><a href="#/">Go to the home page</a></p>'; return; }
+  if (guard[name]) {
+    if (!user) { location.hash = '#/login'; return; }
+    if (!guard[name].includes(user.role)) { main.innerHTML = '<h1>Access denied</h1><p>Your account cannot open this page.</p>'; return; }
+  }
+  loadAlerts();
+  main.innerHTML = '<p class="muted">Loading…</p>';
+  try { await pages[name](decodeURIComponent(arg)); }
+  catch (e) { main.innerHTML = `<p class="error" role="alert">${esc(e.message)}</p>`; }
+  window.scrollTo(0, 0);
+}
+
+const run = async (fn, arg) => { try { await fn(arg); } catch (e) { flash(e.message, 'error'); } };
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (el && acts[el.dataset.act]) run(acts[el.dataset.act], el); });
+document.addEventListener('change', e => { const el = e.target.closest('[data-chg]'); if (el && chg[el.dataset.chg]) run(chg[el.dataset.chg], el); });
+document.addEventListener('submit', e => { const f = e.target; if (forms[f.id]) { e.preventDefault(); run(forms[f.id], f); } });
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
